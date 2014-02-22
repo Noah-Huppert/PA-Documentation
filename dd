@@ -1,0 +1,18 @@
+Lobby JS
+========
+- PlayerViewModel(name, commander, is_player)
+- - name - Player name, set by input "name"
+- - commander - Commander selected by player in lobby, set by input "commander"
+- - isPlayer - *Determines if player object is AI* , set by input "is_player"
+- - commanderImageSource - Image for commander, determined by searching img folder of commander name
+-ArmyViewModel(players, slots, primary_color, secondary_color, player_display_name)
+- - p - Array of players on army
+- - isAi - Boolean determining if player object is AI
+- - isPlayer - Boolean determining if player object is real player
+- - numSlots - Number of slots in the army
+- - armyLocal - *In local game?*
+- - **for statement** iterating through input "slots"
+- - - If current slot is a STRING set up name, commander, local, armyLocal and set isPlayer to TRUE
+- - - If current slot is AI setup name, commander, local, and isAi to TRUE
+- - - add onto player array with new PlayerViewModel(name, commander, local)
+- - 
