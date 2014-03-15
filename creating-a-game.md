@@ -1,3 +1,4 @@
+Updates made for 62857, but this will always be a work in progress.
 
 ## Index
 - Super high level overview
@@ -12,7 +13,9 @@
 - Attach to the server and wait for a state change
 - Configure the game
 - Players join armies
-- Start the game, and wait for a state change
+- Wait for the server to be ready
+- Start the game
+- Wait for a state change
 
 ## Overview of API calls:
 
@@ -31,13 +34,11 @@ Heading is the scene in PA.
 - optionally: modify_settings, add_army, remove_army, leave_army, modify_army, next_primary_color, next_secondary_color, chat_message, update_commander, leave
 - send_message join_army
 - send_message toggle_ready
+- handlers.control payload.sim_ready == true
 - send_message start_game
-- handlers.server_state payload.data.control.starting == true
-
-### building_planets:
 - handlers.server_state payload.url
 
-## Staring a Game
+## Starting a Game
 
 ### Request a server from UberNet
 
@@ -122,9 +123,9 @@ Once a player has joined an army (the methods accept no parameter to say otherwi
 
 ### Start the game
 
-Players need to send the toggle_ready message before the game may begin. 
+Players need to send the toggle_ready message before the game may begin. The server must be in the sim_ready state, which can be observed on handlers.control
 
-Once all players are ready, the host may start the game by sending start_game.  Failure due to misconfiguration is common here, so make sure to report errors on this method.
+Once all players and the server are ready, the host may start the game by sending start_game.  Failure due to misconfiguration is common here, so make sure to report errors on this method.
 
     model.send_message('start_game', undefined, function(success) {
       if (!success) {
@@ -133,9 +134,7 @@ Once all players are ready, the host may start the game by sending start_game.  
       }
     });
 
-All you can do from there is wait for the server_state message with payload.state == 'landing' and follow the payload.url.
-
-Alternately, you may listen for a message with playload.data.control.starting == true, at which point you can to switch to the building_planets scene for consistency with the main game.  bulding_planets will handle the landing change to live_game when it's ready.
+All you can do from there is wait for the server_state message with payload.state == 'landing' and follow the payload.url.  If you are spectating, the state will be 'playing' instead.
 
 ## Data Structures
 
@@ -190,6 +189,8 @@ Server and client formats are slightly different, see the game code for conversi
           "mass": 10000,
           "position": [x, y],
           "velocity": [x, y],
+          "required_thrust_to_move": 0,
+          "starting_planet": true,
           "generator": {
              "seed": 78462,
              "radius": 400,
@@ -214,6 +215,8 @@ Server and client formats are slightly different, see the game code for conversi
           "position_y": 8786.55,
           "velocity_x": -15.5348,
           "velocity_y": 94.7081,
+          "required_thrust_to_move": 0,
+          "starting_planet": true,
           "planet": {
              "seed": 78462,
              "radius": 400,
@@ -327,6 +330,11 @@ arguments: [ Army ]
 
 Completely replace the set of armies.  Used by alpha-ui when changing game types, but also the most straightforward method for API-centric applications.
 
+#### set_loading
+arguments: {loading: bool}
+
+Set the player's loading indicator.
+
 #### start_game
 arguments: none
 
@@ -353,6 +361,11 @@ arguments: none
 ### connection_failed
 arguments: none
 
+### control
+arguments: {sim_ready: bool, ...}
+
+The server must be sim_ready before sending the start_game message.
+
 ### login_accepted
 arguments: none
 
@@ -368,9 +381,11 @@ arguments: object:
      data: {
        armies: [Army],
        colors: [],
-       control: {starting: bool},
+       control: {sim_ready: bool, ...},
        players: [],
        settings: {game_mode: Type},
        system: System,
      }
    }
+
+Most of the data fields have dedicated messages that send only that piece of data.  control is the most imporant for successfully starting a game.
