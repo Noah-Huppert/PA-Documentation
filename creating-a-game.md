@@ -1,4 +1,4 @@
-Updates made for 62857, but this will always be a work in progress.
+Updates made for 63180, but this will always be a work in progress.
 
 ## Index
 - Super high level overview
@@ -29,9 +29,10 @@ Heading is the scene in PA.
 - handlers.server_state payload.url
 
 ### new_game:
-- send_message update_game_config with desc
+- send_message modify_settings with an object
+- send_message modify_system with a server-formatted system
 - send_message reset_armies with armies
-- optionally: modify_settings, add_army, remove_army, leave_army, modify_army, next_primary_color, next_secondary_color, chat_message, update_commander, leave
+- optionally: add_army, remove_army, leave_army, modify_army, next_primary_color, next_secondary_color, chat_message, update_commander, leave
 - send_message join_army
 - send_message toggle_ready
 - handlers.control payload.sim_ready == true
@@ -95,9 +96,10 @@ listen to handlers.server_state for msg.state == 'lobby'
 
 ### Configuring the Game
 
-Once you've joined the game, it must be configured.  See the data structures below for fields in a game description. An important detail is that system format used by the client and server slightly different, and may need to be translated.  A modify_settings message was also recently introduced, which accepts all field except system and enable_lan.
+Once you've joined the game, it must be configured.  See the data structures below for fields in a settings object and system. An important detail is that system format used by the client and server slightly different, and may need to be translated.
 
-    model.send_message('update_game_config', desc, optionalCallback)
+    model.send_message('modify_settings', settings, optionalCallback)
+    model.send_message('modify_system', system, optionalCallback)
 
 The army information was recently moved out of the game description to a number of detailed methods.  If you know exactly what you want to make, call reset_armies
 
@@ -138,16 +140,14 @@ All you can do from there is wait for the server_state message with payload.stat
 
 ## Data Structures
 
-### Game Description
+### Settings
 
   {
     "blocked" : [],
-    "enable_lan" : false,
     "public": false,
     "friends" : [],
     "password" : undefined,
     "spectators" : 0,
-    "system" : null, // see below
     "type" : '0',
   }
 
@@ -312,7 +312,7 @@ arguments {army_index: index, options: Army(subset)}
 Allows setting of a single army property after creation.
 
 #### modify_settings
-arguments: GameDescription
+arguments: Settings
 
 Introduced in 62318, the game uses this message when settings other than system are changed, and sends it without system or enable_lan.
 
@@ -349,9 +349,6 @@ arguments: {commander: {ObjectName: ""}}
 Unlike colors, the protocol supports setting the commander directly; the cycling behavior is part of the alpha-ui.
 
 The game provides a catalog of commanders where ObjectNames can be looked up, currently located in ui/alpha/shared/js/catalog.js
-
-#### update_game_config
-arguments: GameDescription (server format)
 
 ## Handlers used
 
